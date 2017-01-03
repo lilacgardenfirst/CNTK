@@ -98,8 +98,15 @@ if not %l_build_target% == CPU-only (
     )
 )
 
-echo #define _MPI_NAME_ "msmpi" >> buildinfo.h$$
-for /f "tokens=6 delims=] " %%i in ('mpiexec -? ^| findstr Version') do echo #define _MPI_VERSION_ "%%i" >> buildinfo.h$$
+where -q mpiexec
+if not errorlevel 1 (
+    call mpiexec -help > NUL 2>&1
+    if not errorlevel 1 (
+        echo #define _MPI_NAME_ "msmpi" >> buildinfo.h$$
+        for /f "tokens=6 delims=] " %%i in ('mpiexec -? ^| findstr Version') do echo #define _MPI_VERSION_ "%%i" >> buildinfo.h$$
+    )
+)
+
 echo #endif >> buildinfo.h$$
 
 ::: update file only if it changed (otherwise CNTK.cpp will get rebuilt each time)
