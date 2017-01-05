@@ -42,7 +42,6 @@ protobuf_path=
 protobuf_check=lib/libprotobuf.a
 
 # MPI library
-has_mpi=no
 mpi_path=
 mpi_check=include/mpi.h
 
@@ -815,7 +814,6 @@ do
             fi
             ;;
         --with-mpi*)
-            has_mpi=yes
             if test x$optarg = x
             then
                 mpi_path=$(find_mpi)
