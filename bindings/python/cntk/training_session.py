@@ -28,6 +28,9 @@ class TrainingSession(cntk_py.TrainingSession):
 
         super(TrainingSession, self).run(device)
 
+    def on_minibatch_start(self):
+        print('I am in...')
+
 @typemap
 def minibatch_size_schedule(schedule, epoch_size=1):
     '''
@@ -74,9 +77,9 @@ def minibatch_size_schedule(schedule, epoch_size=1):
 def training_session(training_minibatch_source,
         trainer,
         minibatch_size_schedule,
+        model_inputs_to_mb_source_mapping={},
         checkpoint_filename=None,
-        checkpoint_frequency=0,
-        model_inputs_to_mb_source_mapping={}):
+        checkpoint_frequency=0):
     '''
     Creates a basic training session.
 
