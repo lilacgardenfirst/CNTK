@@ -59,9 +59,6 @@ def minibatch_size_schedule(schedule, epoch_size=1):
     Returns:
         training parameter schedule
     '''
-    if isinstance(schedule, cntk_py.minibatch_size_schedule):
-        return schedule
-
     if isinstance(schedule, int):
         if epoch_size != 1:
             raise ValueError('when providing the schedule as a number,'

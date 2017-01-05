@@ -3202,20 +3202,20 @@ namespace CNTK
     class TrainingParameterPerUnitSchedule : public TrainingParameterSchedule<T>
     {
     public:
-        TrainingParameterPerUnitSchedule(double value) 
+        TrainingParameterPerUnitSchedule(T value)
             : TrainingParameterSchedule<T>::TrainingParameterSchedule(value, U)
         { }
         
-        TrainingParameterPerUnitSchedule(const std::vector<double>& schedule, size_t epochSize = 1) 
+        TrainingParameterPerUnitSchedule(const std::vector<T>& schedule, size_t epochSize = 1) 
             : TrainingParameterSchedule<T>::TrainingParameterSchedule(schedule, U, epochSize)
         { }
         
-        TrainingParameterPerUnitSchedule(const std::vector<std::pair<size_t, double>>& schedule, size_t epochSize = 1) 
+        TrainingParameterPerUnitSchedule(const std::vector<std::pair<size_t, T>>& schedule, size_t epochSize = 1) 
             : TrainingParameterSchedule<T>::TrainingParameterSchedule(schedule, U, epochSize)
         { }
 
 #ifdef SWIG // for Python interop (adds indexer)
-        const double __getitem__(size_t count) const
+        const T __getitem__(size_t count) const
         {
             return TrainingParameterSchedule<T>::operator[](count);
         }
@@ -3242,7 +3242,7 @@ namespace CNTK
     typedef TrainingParameterPerSampleSchedule<double> MomentumPerSampleSchedule;
     typedef TrainingParameterPerMinibatchSchedule<double> MomentumPerMinibatchSchedule;
 
-    typedef TrainingParameterSchedule<size_t> MinibatchSizeSchedule;
+    typedef TrainingParameterPerSampleSchedule<size_t> MinibatchSizeSchedule;
 
     ///
     /// This class allows to specify momentum as time constant in place of momentum per sample in 
