@@ -213,8 +213,8 @@ void TestMinibatchSourceWarmStart(size_t minibatchSize, size_t warmStartSamples,
 
     if (totalSamples != numberOfSamplesInSweep)
         ReportFailure("Expected sweep number '%d' did not match the actual '%d'.",
-                      numberOfSamplesInSweep,
-                      totalSamples);
+                      (int)numberOfSamplesInSweep,
+                      (int)totalSamples);
 }
 
 void MinibatchSourceTests()
