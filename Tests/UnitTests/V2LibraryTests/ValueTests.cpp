@@ -271,39 +271,18 @@ void ValueCreationOneHotWithNDMaskTest(const DeviceDescriptor device, bool readO
 }
 
 template <typename ElementType>
-void CheckCopyToOutput(const size_t sampleSize, const std::vector<std::vector<ElementType>>& expected, const std::vector<std::vector<ElementType>>& actual, const std::vector<size_t>& actualSeqLens)
+void CheckCopyToOutput(const std::vector<std::vector<ElementType>>& expected, const std::vector<std::vector<ElementType>>& actual)
 {
-    bool useSeqLens;
-    if (actualSeqLens.size() != 0)
-    {
-        useSeqLens = true;
-        if (actualSeqLens.size() < expected.size())
-            ReportFailure("The actualSeqLens size does not match. expected: %" PRIu64 " actual: %" PRIu64 "\n", expected.size(), actualSeqLens.size());
-        else
-        {
-            for (size_t i = expected.size(); i < actualSeqLens.size(); i++)
-                if (actualSeqLens[i] != 0)
-                    ReportFailure("The actualSeqLens contains invalid data.");
-        }
-
-        if (actual.size() < expected.size())
-            ReportFailure("The number of sequences does not match. expected: %" PRIu64 " actual: %" PRIu64 "\n", expected.size(), actual.size());
-    }
-    else
-    {
-        useSeqLens = false;
-        if (expected.size() != actual.size())
-            ReportFailure("The number of sequences does not match. expected: %" PRIu64 " actual: %" PRIu64 "\n", expected.size(), actual.size());
-    }
+    if (expected.size() != actual.size())
+        ReportFailure("The number of sequences does not match. expected: %" PRIu64 " actual: %" PRIu64 "\n", expected.size(), actual.size());
 
     for (size_t i = 0; i < expected.size(); i++)
     {
-        auto len = useSeqLens ? actualSeqLens[i] * sampleSize : actual[i].size();
-        if ((actual[i].size() < len) || (expected[i].size() != len))
+        if (expected[i].size() != actual[i].size())
         {
             ReportFailure("Seq %lu does not match.\n", static_cast<unsigned long>(i));
         }
-        for (size_t j = 0; j < len; j++)
+        for (size_t j = 0; j < expected[i].size(); j++)
         {
             if (expected[i][j] != actual[i][j])
             {
@@ -311,13 +290,6 @@ void CheckCopyToOutput(const size_t sampleSize, const std::vector<std::vector<El
             }
         }
     }
-}
-
-template <typename ElementType>
-void CheckCopyToOutput(const size_t sampleSize, const std::vector<std::vector<ElementType>>& expected, const std::vector<std::vector<ElementType>>& actual)
-{
-    std::vector<size_t> actualSeqLens(0);
-    CheckCopyToOutput(sampleSize, expected, actual, actualSeqLens);
 }
 
 template <typename ElementType>
@@ -347,47 +319,37 @@ Variable CreateVariable(NDShape shape, int numOfDynamicAxes)
 }
 
 template <typename ElementType>
-void TestResizeDense(const Variable& sampleVariable, std::vector<size_t>& expectedSeqLens, std::vector<std::vector<ElementType>>& output, std::vector<size_t>& actualSeqLens, const DeviceDescriptor& device)
+void TestDenseSequences(const Variable& sampleVariable, std::vector<size_t>& expectedSeqLens, std::vector<std::vector<ElementType>>& output, const DeviceDescriptor& device)
 {
     auto input = GenerateSequences<ElementType>(expectedSeqLens, sampleVariable.Shape());
     auto val = Value::Create(sampleVariable.Shape(), input, device);
 
-    // The sequence axis is too small
-    VerifyException([&val, &sampleVariable, &output, &actualSeqLens]() {
-        val->CopyTo(sampleVariable, output, actualSeqLens, false);
-    }, "The exception 'output buffer is too small.' not thrown.");
-
-    val->CopyTo(sampleVariable, output, actualSeqLens);
-    CheckCopyToOutput<ElementType>(sampleVariable.Shape().TotalSize(), input, output, actualSeqLens);
+    val->CopyVariableValueTo(sampleVariable, output);
+    CheckCopyToOutput<ElementType>(input, output);
 }
 
 template <typename ElementType>
-void TestResizeOneHot(const Variable& sampleVariable, std::vector<size_t>& expectedSeqLens, std::vector<std::vector<size_t>>& output, std::vector<size_t>& actualSeqLens, const DeviceDescriptor& device)
+void TestOneHotSequences(const Variable& sampleVariable, std::vector<size_t>& expectedSeqLens, std::vector<std::vector<size_t>>& output, const DeviceDescriptor& device)
 {
     auto input = GenerateOneHotSequences(expectedSeqLens, sampleVariable.Shape().TotalSize());
     auto val = Value::Create<ElementType>(sampleVariable.Shape().TotalSize(), input, device);
 
-    // The sequence axis is too small
-    VerifyException([&val, &sampleVariable, &output, &actualSeqLens]() {
-        val->CopyTo(sampleVariable, output, actualSeqLens, false);
-    }, "The exception 'output buffer is too small.' not thrown.");
-
-    val->CopyTo(sampleVariable, output, actualSeqLens);
-    CheckCopyToOutput(1, input, output, actualSeqLens);
+    val->CopyVariableValueTo(sampleVariable, output);
+    CheckCopyToOutput(input, output);
 }
 
 template <typename ElementType>
 void ValueCopyToDenseTest(const DeviceDescriptor& device)
 {
     NDShape sampleShape{{2, 3}};
-    auto sampleSize = sampleShape.TotalSize();
     std::vector<std::vector<ElementType>> input;
     std::vector<std::vector<ElementType>> output;
     std::vector<size_t> expectedSeqLens;
-    std::vector<size_t> actualSeqLens;
 
     //Todo: add tests sparse to dense.
-    // Check single sample. No dynamic axis for the sampleVariable
+
+    // Check single sample.
+    // No dynamic axis for the sampleVariable
     auto sampleVariable = CreateVariable<float>(sampleShape, 0);
     size_t batchCount = 1;
     expectedSeqLens.clear();
@@ -396,20 +358,20 @@ void ValueCopyToDenseTest(const DeviceDescriptor& device)
     input = GenerateSequences<ElementType>(expectedSeqLens, sampleShape);
     auto val = Value::Create(sampleShape, input, device);
 
-    val->CopyTo(sampleVariable, output);
-    CheckCopyToOutput(sampleSize, input, output);
+    val->CopyVariableValueTo(sampleVariable, output);
+    CheckCopyToOutput(input, output);
 
     // 1 dynamic axis (as batch) for the sampleVariable
     sampleVariable = CreateVariable<float>(sampleShape, 1);
-    val->CopyTo(sampleVariable, output);
-    CheckCopyToOutput(sampleSize, input, output);
+    val->CopyVariableValueTo(sampleVariable, output);
+    CheckCopyToOutput(input, output);
 
     // 2 dynamic axes for the sampleVariable
     sampleVariable = CreateVariable<float>(sampleShape, 2);
-    val->CopyTo(sampleVariable, output);
-    CheckCopyToOutput(sampleSize, input, output);
+    val->CopyVariableValueTo(sampleVariable, output);
+    CheckCopyToOutput(input, output);
 
-    // Check batch of sample.
+    // Check batch of samples.
     // 1 dynamic axis (as batch) for the sampleVariable
     sampleVariable = CreateVariable<float>(sampleShape, 1);
     batchCount = 2;
@@ -419,21 +381,15 @@ void ValueCopyToDenseTest(const DeviceDescriptor& device)
     input = GenerateSequences<ElementType>(expectedSeqLens, sampleVariable.Shape());
     val = Value::Create(sampleVariable.Shape(), input, device);
 
-    // The sequence axis is too small
-    // Not using TestResizeDense as the input value is needed for the next test.
-    VerifyException([&val, &sampleVariable, &output, &actualSeqLens]() {
-        val->CopyTo(sampleVariable, output, actualSeqLens, false);
-    }, "The exception 'output buffer is too small.' not thrown.");
-
-    val->CopyTo(sampleVariable, output, actualSeqLens);
-    CheckCopyToOutput(sampleVariable.Shape().TotalSize(), input, output, actualSeqLens);
+    val->CopyVariableValueTo(sampleVariable, output);
+    CheckCopyToOutput(input, output);
 
     // 2 dynamic axes for the sampleVariable
     sampleVariable = CreateVariable<float>(sampleShape, 2);
-    val->CopyTo(sampleVariable, output);
-    CheckCopyToOutput(sampleSize, input, output);
+    val->CopyVariableValueTo(sampleVariable, output);
+    CheckCopyToOutput(input, output);
 
-    // Check sequence of sample, but single batch
+    // Check sequence of samples, but single batch
     // The variable should have 2 dynamic axes.
     sampleVariable = CreateVariable<float>(sampleShape, 2);
     size_t sampleCount = 4;
@@ -441,33 +397,33 @@ void ValueCopyToDenseTest(const DeviceDescriptor& device)
     expectedSeqLens.clear();
     for (size_t i = 0; i < batchCount; i++)
         expectedSeqLens.push_back(sampleCount);
-    TestResizeDense(sampleVariable, expectedSeqLens, output, actualSeqLens, device);
+    TestDenseSequences(sampleVariable, expectedSeqLens, output, device);
 
-    // Check batch of sequence of the same length, no mask needed.
+    // Check batch of sequences of the same length, no mask needed.
     batchCount = 4;
     sampleCount = 3;
     expectedSeqLens.clear();
     for (size_t i = 0; i < batchCount; i++)
         expectedSeqLens.push_back(sampleCount);
-    TestResizeDense(sampleVariable, expectedSeqLens, output, actualSeqLens, device);
+    TestDenseSequences(sampleVariable, expectedSeqLens, output, device);
 
-    // Check batch of sequecnes with different length, mask needed.
+    // Check batch of sequecnes with different lengths, mask needed.
     std::vector<size_t> sampleCountList {6, 9, 2};
     batchCount = sampleCountList.size();
     expectedSeqLens.clear();
     for (size_t i = 0; i < batchCount; i++)
         expectedSeqLens.push_back(sampleCountList[i]);
-    TestResizeDense(sampleVariable, expectedSeqLens, output, actualSeqLens, device);
+    TestDenseSequences(sampleVariable, expectedSeqLens, output, device);
 
-    // More batches and sequences, need resize
+    // More sequences in a batch, need resize
     sampleCountList = {6, 12, 2, 1, 5, 3, 4};
     batchCount = sampleCountList.size();
     expectedSeqLens.clear();
     for (size_t i = 0; i < batchCount; i++)
         expectedSeqLens.push_back(sampleCountList[i]);
-    TestResizeDense(sampleVariable, expectedSeqLens, output, actualSeqLens, device);
+    TestDenseSequences(sampleVariable, expectedSeqLens, output, device);
 
-    // Random batch and sequence
+    // Random batch and sequences
     int testRun = 4;
     size_t maxNumOfSequences = 100;
     size_t maxSequenceLen = 100;
@@ -482,8 +438,8 @@ void ValueCopyToDenseTest(const DeviceDescriptor& device)
         input = GenerateSequences<ElementType>(expectedSeqLens, sampleShape);
         val = Value::Create(sampleShape, input, device);
 
-        val->CopyTo(sampleVariable, output, actualSeqLens);
-        CheckCopyToOutput(sampleSize, input, output, actualSeqLens);
+        val->CopyVariableValueTo(sampleVariable, output);
+        CheckCopyToOutput( input, output);
     }
 }
 
@@ -495,10 +451,10 @@ void ValueCopyToOneHotTest(const DeviceDescriptor& device)
     std::vector<std::vector<size_t>> input;
     std::vector<std::vector<size_t>> output;
     std::vector<size_t> expectedSeqLens;
-    std::vector<size_t> actualSeqLens;
 
     // Todo: add tests dense to sparse
     // Check single sample.
+    // No dynamic axis for the sampleVariable.
     auto sampleVariable = CreateVariable<float>(sampleShape, 0);
     size_t batchCount = 1;
     expectedSeqLens.clear();
@@ -507,20 +463,20 @@ void ValueCopyToOneHotTest(const DeviceDescriptor& device)
     input = GenerateOneHotSequences(expectedSeqLens, dim);
     auto val = Value::Create<ElementType>(dim, input, device);
 
-    val->CopyTo(sampleVariable, output);
-    CheckCopyToOutput(1, input, output);
+    val->CopyVariableValueTo(sampleVariable, output);
+    CheckCopyToOutput(input, output);
 
     // 1 dynamic axis (as batch) for the sampleVariable
     sampleVariable = CreateVariable<float>(sampleShape, 1);
-    val->CopyTo(sampleVariable, output);
-    CheckCopyToOutput(1, input, output);
+    val->CopyVariableValueTo(sampleVariable, output);
+    CheckCopyToOutput(input, output);
 
     // 2 dynamic axes for the sampleVariable
     sampleVariable = CreateVariable<float>(sampleShape, 2);
-    val->CopyTo(sampleVariable, output);
-    CheckCopyToOutput(1, input, output);
+    val->CopyVariableValueTo(sampleVariable, output);
+    CheckCopyToOutput(input, output);
 
-    // Check batch of sample.
+    // Check batch of samples.
     // 1 dynamic axis (as batch) for the sampleVariable
     sampleVariable = CreateVariable<float>(sampleShape, 1);
     batchCount = 2;
@@ -530,21 +486,15 @@ void ValueCopyToOneHotTest(const DeviceDescriptor& device)
     input = GenerateOneHotSequences(expectedSeqLens, sampleVariable.Shape().TotalSize());
     val = Value::Create<ElementType>(sampleVariable.Shape().TotalSize(), input, device);
 
-    // The sequence axis is too small
-    // Not using TestResize() as the input is needed for the next test.
-    VerifyException([&val, &sampleVariable, &output, &actualSeqLens]() {
-        val->CopyTo(sampleVariable, output, actualSeqLens, false);
-    }, "The exception 'output buffer is too small.' not thrown.");
-
-    val->CopyTo(sampleVariable, output, actualSeqLens);
-    CheckCopyToOutput(1, input, output, actualSeqLens);
+    val->CopyVariableValueTo(sampleVariable, output);
+    CheckCopyToOutput(input, output);
 
     // 2 dynamic axes for the sampleVariable
     sampleVariable = CreateVariable<float>(sampleShape, 2);
-    val->CopyTo(sampleVariable, output);
-    CheckCopyToOutput(1, input, output);
+    val->CopyVariableValueTo(sampleVariable, output);
+    CheckCopyToOutput(input, output);
 
-    // Check sequence of sample, but single batch
+    // Check sequence of samples, but single batch
     // The variable should have 2 dynamic axes.
     sampleVariable = CreateVariable<float>(sampleShape, 2);
     size_t sampleCount = 4;
@@ -552,33 +502,33 @@ void ValueCopyToOneHotTest(const DeviceDescriptor& device)
     expectedSeqLens.clear();
     for (size_t i = 0; i < batchCount; i++)
         expectedSeqLens.push_back(sampleCount);
-    TestResizeOneHot<ElementType>(sampleVariable, expectedSeqLens, output, actualSeqLens, device);
+    TestOneHotSequences<ElementType>(sampleVariable, expectedSeqLens, output, device);
 
-    // Check batch of sequence of the same length, no mask needed.
+    // Check batch of sequences of the same length, no mask needed.
     batchCount = 4;
     sampleCount = 3;
     expectedSeqLens.clear();
     for (size_t i = 0; i < batchCount; i++)
         expectedSeqLens.push_back(sampleCount);
-    TestResizeOneHot<ElementType>(sampleVariable, expectedSeqLens, output, actualSeqLens, device);
+    TestOneHotSequences<ElementType>(sampleVariable, expectedSeqLens, output, device);
 
-    // Check batch of sequecnes with different length, mask needed.
+    // Check batch of sequecnes with different lengths, mask needed.
     std::vector<size_t> sampleCountList{6, 9, 2};
     batchCount = sampleCountList.size();
     expectedSeqLens.clear();
     for (size_t i = 0; i < batchCount; i++)
         expectedSeqLens.push_back(sampleCountList[i]);
-    TestResizeOneHot<ElementType>(sampleVariable, expectedSeqLens, output, actualSeqLens, device);
+    TestOneHotSequences<ElementType>(sampleVariable, expectedSeqLens, output, device);
 
-    // More batches and sequences, resize required
+    // More sequences in a batch, resize required
     sampleCountList = {6, 12, 2, 1, 5, 3, 4};
     batchCount = sampleCountList.size();
     expectedSeqLens.clear();
     for (size_t i = 0; i < batchCount; i++)
         expectedSeqLens.push_back(sampleCountList[i]);
-    TestResizeOneHot<ElementType>(sampleVariable, expectedSeqLens, output, actualSeqLens, device);
+    TestOneHotSequences<ElementType>(sampleVariable, expectedSeqLens, output, device);
 
-    // Random batch and sequence
+    // Random batch and sequences
     int testRun = 4;
     size_t maxNumOfSequences = 100;
     size_t maxSequenceLen = 100;
@@ -593,8 +543,8 @@ void ValueCopyToOneHotTest(const DeviceDescriptor& device)
         input = GenerateOneHotSequences(expectedSeqLens, dim);
         val = Value::Create<ElementType>(dim, input, device);
 
-        val->CopyTo(sampleVariable, output, actualSeqLens);
-        CheckCopyToOutput(1, input, output, actualSeqLens);
+        val->CopyVariableValueTo(sampleVariable, output);
+        CheckCopyToOutput(input, output);
     }
 }
 
