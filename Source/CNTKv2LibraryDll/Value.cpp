@@ -363,7 +363,7 @@ namespace CNTK
     void DirectCopy(const ElementType *source, size_t elementCount, std::vector<DestType>& dest);
 
     template <typename ElementType, typename DestType>
-    void CopyDenseToOneHot(const ElementType *source, size_t elementCount, std::vector<DestType>& dest);
+    void CopyDenseToOneHot(const ElementType *source, const size_t sampleCount, const size_t sampleSize, std::vector<DestType>& dest);
 
     template <typename ElementType>
     void Value::CopyVariableValueToVector(const Variable& outputVariable, std::vector<std::vector<ElementType>>& sequences)
