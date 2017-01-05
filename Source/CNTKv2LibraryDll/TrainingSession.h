@@ -12,7 +12,7 @@ namespace CNTK
     class BasicTrainingSession : public TrainingSession
     {
     public:
-        BasicTrainingSession(
+        CNTK_API BasicTrainingSession(
             MinibatchSourcePtr trainingSource,
             TrainerPtr trainer,
             const std::unordered_map<Variable, StreamInformation>& modelInputToMinibatchSourceStream,
@@ -27,9 +27,9 @@ namespace CNTK
         }
 
     protected:
-        size_t GetMinibatchSize() override
+        CNTK_API size_t GetMinibatchSize() override
         {
-            return m_minibatchSizeSchedule[m_trainer->TotalNumberOfSamplesSeen()];
+            return m_minibatchSizeSchedule[Trainer()->TotalNumberOfSamplesSeen()];
         }
 
     private:

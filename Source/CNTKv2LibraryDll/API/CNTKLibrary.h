@@ -4016,6 +4016,13 @@ namespace CNTK
         //
         virtual void OnMinibatchStart() {};
 
+        //
+        // Accessors.
+        //
+        TrainerPtr Trainer() const { return m_trainer; }
+
+        MinibatchSourcePtr TrainingMinibatchSource() const { return m_trainingSource; }
+
     private:
         // Disallow copy and move construction and assignment
         TrainingSession(const TrainingSession&) = delete; TrainingSession& operator=(const TrainingSession&) = delete; TrainingSession& operator=(TrainingSession&&) = delete; TrainingSession(TrainingSession&&) = delete;
@@ -4025,7 +4032,6 @@ namespace CNTK
         static const std::wstring s_checkpointIndex;
         static const std::wstring s_trainingMinibatchSource;
 
-    protected:
         const size_t m_checkpointFrequencyinSamples;
         const std::wstring m_checkPointFileName;
         size_t m_currentCheckpointIndex;
