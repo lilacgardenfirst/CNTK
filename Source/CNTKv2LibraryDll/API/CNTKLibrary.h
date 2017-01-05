@@ -4002,9 +4002,6 @@ namespace CNTK
         ///
         CNTK_API virtual void RestoreFromCheckpoint(const std::wstring& checkpointFileName);
 
-        virtual ~TrainingSession() {}
-
-    protected:
         //
         // Called each time before a new minibatch is requested from the minibatch source
         // during training (from Run method).
@@ -4016,6 +4013,10 @@ namespace CNTK
         //
         virtual void OnMinibatchStart() {};
 
+
+        virtual ~TrainingSession() {}
+
+    protected:
         //
         // Accessors.
         //

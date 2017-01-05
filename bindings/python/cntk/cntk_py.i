@@ -407,6 +407,9 @@ public:
 // Callback support
 %feature("director") Callback;
 
+// Common directors
+%feature("director") CNTK::TrainingSession;
+
 //
 // Exception handling
 //
