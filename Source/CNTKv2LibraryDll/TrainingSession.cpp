@@ -125,7 +125,11 @@ namespace CNTK
         std::wstring tempFileName = m_checkPointFileName + L".tmp";
         m_trainer->SaveCheckpoint(tempFileName, externalState);
 
-        _wunlink(m_checkPointFileName.c_str());
-        renameOrDie(tempFileName, m_checkPointFileName);
+        // Perform the actual renaming only on the main worker.
+        if (m_workerRank == 0)
+        {
+            _wunlink(m_checkPointFileName.c_str());
+            renameOrDie(tempFileName, m_checkPointFileName);
+        }
     }
 }

@@ -190,10 +190,10 @@ void TestMinibatchSourceWarmStart(size_t minibatchSize, size_t warmStartSamples,
                 if (minibatchData[featureStreamInfo].m_numSamples != minibatchSize/2 && totalSamples != numberOfSamplesInSweep)
                     ReportFailure("TestMinibatchSourceWarmStart failed because data did not match."
                                   "Expected minibatch size '%d', acutal '%d'. Total number of sample '%d', sweep '%d'.",
-                                  minibatchSize,
-                                  minibatchData[featureStreamInfo].m_numSamples,
-                                  totalSamples,
-                                  numberOfSamplesInSweep);
+                                  (int)minibatchSize,
+                                  (int)minibatchData[featureStreamInfo].m_numSamples,
+                                  (int)totalSamples,
+                                  (int)numberOfSamplesInSweep);
             }
             else
             {
@@ -203,10 +203,10 @@ void TestMinibatchSourceWarmStart(size_t minibatchSize, size_t warmStartSamples,
                     totalSamples != numberOfSamplesInSweep)
                     ReportFailure("TestMinibatchSourceWarmStart failed because data did not match."
                         "Expected minibatch size '%d', acutal '%d'. Total number of sample '%d', sweep '%d'.",
-                        minibatchSize,
-                        accumulative,
-                        totalSamples,
-                        numberOfSamplesInSweep);
+                        (int)minibatchSize,
+                        (int)accumulative,
+                        (int)totalSamples,
+                        (int)numberOfSamplesInSweep);
             }
         }
     }
