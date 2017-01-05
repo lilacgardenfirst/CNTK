@@ -16,13 +16,13 @@ def test_cntk_103_mnist_feedforwardnetwork_noErrors(nb):
               for output in cell['outputs'] if output.output_type == "error"]
     assert errors == []
 
-expectedEvalError = 1.79
+expectedEvalErrorByDeviceId = { -1: 1.79, 0: 1.64 }
 
-def test_cntk_103_mnist_feedforwardnetwork_evalCorrect(nb):
+def test_cntk_103_mnist_feedforwardnetwork_evalCorrect(nb, device_id):
     testCell = [cell for cell in nb.cells
                 if cell.cell_type == 'code' and cell.source.find("print(\"Average test error:") != -1]
     testCell = [cell for cell in nb.cells
                 if cell.cell_type == 'code' and re.search('trainer\.test_minibatch', cell.source)]
     assert len(testCell) == 1
     m = re.match(r"Average test error: (?P<actualEvalError>\d+\.\d+)%\r?$", testCell[0].outputs[0]['text'])
-    assert np.isclose(float(m.group('actualEvalError')), expectedEvalError, rtol=0.03)
+    assert np.isclose(float(m.group('actualEvalError')), expectedEvalErrorByDeviceId[device_id], rtol=0.03)
