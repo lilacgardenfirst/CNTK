@@ -2205,6 +2205,8 @@ namespace CNTK
         template <typename ElementType>
         void CopyVariableValueTo(const Variable& outputVariable, std::vector<std::vector<ElementType>>& sequences)
         {
+            if (outputVariable.GetDataType() != GetDataType())
+                InvalidArgument("The outputVariable has a different data type than the Value object.");
             ResizeOutputBuffer(outputVariable, sequences);
             CopyVariableValueToVector<ElementType>(outputVariable, sequences);
         }
@@ -2217,8 +2219,11 @@ namespace CNTK
         ///
         void CopyVariableValueTo(const Variable& outputVariable, std::vector<std::vector<size_t>>& sequences)
         {
-            ResizeOutputBuffer(outputVariable, sequences);
             auto dataType = GetDataType();
+            if (outputVariable.GetDataType() != dataType)
+                InvalidArgument("The outputVariable has a different data type than the Value object.");
+
+            ResizeOutputBuffer(outputVariable, sequences);
             if (dataType == DataType::Float)
             {
                 CopyVariableValueToVector<float>(outputVariable, sequences);
@@ -2268,13 +2273,13 @@ namespace CNTK
         template <typename ElementType>
         void ResizeOutputBuffer(const Variable& outputVariable, std::vector<std::vector<ElementType>>& sequences)
         {
-            size_t numOfSequences;
-            size_t maxSequenceLen;
-            std::tie(maxSequenceLen, numOfSequences) = GetSequenceAndBatchLength(outputVariable);
-
             auto shape = outputVariable.Shape();
             if (shape == NDShape::Unknown || shape.HasInferredDimension())
                 RuntimeError("It is not supported that the outputVariable has a unknown shape or inferred dimension.");
+
+            size_t numOfSequences;
+            size_t maxSequenceLen;
+            std::tie(maxSequenceLen, numOfSequences) = GetSequenceAndBatchLength(outputVariable);
 
             // Calculate the number of elements is needed to represent a sample in output buffer.
             // For dense output, it is the total size of the shape.

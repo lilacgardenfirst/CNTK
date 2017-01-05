@@ -380,7 +380,7 @@ namespace CNTK
     {
         if (outputVariable.Shape()[0] != outputVariable.Shape().TotalSize())
         {
-            InvalidArgument("The sample variable's leading axis dimensionality must equal the total size of the variable for sparse data.");
+            InvalidArgument("The outputVariable's leading axis dimensionality must equal the total size of the variable for sparse data.");
         }
         CopyVariableValueToImpl<ElementType, size_t>(outputVariable, sequences);
     }
@@ -455,7 +455,7 @@ namespace CNTK
 
         size_t maskRank = Shape().Rank() - sampleRank;
         if (outputVariable.Shape() != Shape().SubShape(0, sampleRank))
-            RuntimeError("The shape of the outputVariable does not match the value shape.");
+            RuntimeError("The shape of the outputVariable does not match the Value shape.");
 
         if (maskRank > 2)
             RuntimeError("Only 2 dynamic axes are supported now.");
